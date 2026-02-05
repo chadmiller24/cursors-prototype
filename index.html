@@ -21,6 +21,7 @@
       display: flex;
       justify-content: center;
       align-items: center;
+      cursor: none;
     }
 
     .lines-canvas {
@@ -47,7 +48,7 @@
       padding: 12px 16px;
       font-size: 16px;
       font-weight: 500;
-      cursor: pointer;
+      cursor: none;
       background: transparent;
       transition: background 0.2s;
       text-align: left;
@@ -81,6 +82,37 @@
       font-size: 14px;
       opacity: 0.7;
     }
+
+    /* Cursors */
+    .cursor {
+      position: fixed;
+      pointer-events: none;
+      z-index: 1000;
+    }
+
+    .cursor svg {
+      width: 20px;
+      height: 20px;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+    }
+
+    .cursor-label {
+      position: absolute;
+      left: 16px;
+      top: 16px;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 500;
+      white-space: nowrap;
+      background: #000;
+      color: #fff;
+    }
+
+    .cursor-you .cursor-label {
+      background: #fff;
+      color: #000;
+    }
   </style>
 </head>
 <body>
@@ -103,62 +135,60 @@
   <script>
     const canvas = document.getElementById('linesCanvas');
     const buttons = document.querySelectorAll('.btn');
-    const lines = [];
 
-    function getButtonCenter(btn) {
-      const rect = btn.getBoundingClientRect();
-      return {
-        x: rect.left + rect.width / 2,
-        y: rect.top + rect.height / 2
-      };
-    }
-
+    // ============ SUBWAY LINES ============
     function getRandomEdgePoint(btn) {
       const rect = btn.getBoundingClientRect();
       const side = Math.floor(Math.random() * 4);
       switch(side) {
-        case 0: // top
-          return { x: rect.left + Math.random() * rect.width, y: rect.top };
-        case 1: // right
-          return { x: rect.right, y: rect.top + Math.random() * rect.height };
-        case 2: // bottom
-          return { x: rect.left + Math.random() * rect.width, y: rect.bottom };
-        case 3: // left
-          return { x: rect.left, y: rect.top + Math.random() * rect.height };
+        case 0: return { x: rect.left + rect.width / 2, y: rect.top, dir: 'up' };
+        case 1: return { x: rect.right, y: rect.top + rect.height / 2, dir: 'right' };
+        case 2: return { x: rect.left + rect.width / 2, y: rect.bottom, dir: 'down' };
+        case 3: return { x: rect.left, y: rect.top + rect.height / 2, dir: 'left' };
       }
     }
 
-    function generateSubwayPath(start, color) {
-      const points = [start];
-      let current = { ...start };
-      const numSegments = 3 + Math.floor(Math.random() * 4);
+    function generateCleanPath(start) {
+      const points = [{ x: start.x, y: start.y }];
+      let current = { x: start.x, y: start.y };
+      const w = window.innerWidth;
+      const h = window.innerHeight;
 
-      // Determine general direction (toward edge of screen)
-      const screenCenterX = window.innerWidth / 2;
-      const screenCenterY = window.innerHeight / 2;
-      const dirX = start.x < screenCenterX ? -1 : 1;
-      const dirY = start.y < screenCenterY ? -1 : 1;
+      // First segment - go in the initial direction
+      const firstLen = 50 + Math.random() * 100;
+      if (start.dir === 'up') current.y -= firstLen;
+      else if (start.dir === 'down') current.y += firstLen;
+      else if (start.dir === 'left') current.x -= firstLen;
+      else if (start.dir === 'right') current.x += firstLen;
+      points.push({ x: current.x, y: current.y });
 
-      for (let i = 0; i < numSegments; i++) {
-        const segmentLength = 80 + Math.random() * 200;
-        const moveType = Math.random();
+      // Add 1-2 more segments with turns, heading toward edge
+      const numTurns = 1 + Math.floor(Math.random() * 2);
+      for (let i = 0; i < numTurns; i++) {
+        const isHorizontal = start.dir === 'up' || start.dir === 'down' ? (i % 2 === 0) : (i % 2 === 1);
 
-        if (moveType < 0.4) {
-          // Horizontal
-          current = { x: current.x + segmentLength * dirX * (Math.random() > 0.3 ? 1 : -0.5), y: current.y };
-        } else if (moveType < 0.8) {
-          // Vertical
-          current = { x: current.x, y: current.y + segmentLength * dirY * (Math.random() > 0.3 ? 1 : -0.5) };
+        if (isHorizontal) {
+          // Go horizontal toward nearest edge
+          const goRight = current.x < w / 2 ? (Math.random() > 0.3 ? false : true) : (Math.random() > 0.3 ? true : false);
+          const targetX = goRight ? w + 100 : -100;
+          const segLen = 100 + Math.random() * 200;
+          current.x = goRight ? current.x + segLen : current.x - segLen;
         } else {
-          // 45-degree diagonal
-          const diag = segmentLength * 0.707;
-          current = {
-            x: current.x + diag * dirX * (Math.random() > 0.3 ? 1 : -0.5),
-            y: current.y + diag * dirY * (Math.random() > 0.3 ? 1 : -0.5)
-          };
+          // Go vertical toward nearest edge
+          const goDown = current.y < h / 2 ? (Math.random() > 0.3 ? false : true) : (Math.random() > 0.3 ? true : false);
+          const segLen = 100 + Math.random() * 200;
+          current.y = goDown ? current.y + segLen : current.y - segLen;
         }
-        points.push({ ...current });
+        points.push({ x: current.x, y: current.y });
       }
+
+      // Final segment - extend to edge of screen
+      const finalDir = Math.random();
+      if (finalDir < 0.25) current.x = -100;
+      else if (finalDir < 0.5) current.x = w + 100;
+      else if (finalDir < 0.75) current.y = -100;
+      else current.y = h + 100;
+      points.push({ x: current.x, y: current.y });
 
       return points;
     }
@@ -166,12 +196,10 @@
     function createLine(btn) {
       const color = btn.dataset.color;
       const start = getRandomEdgePoint(btn);
-      const points = generateSubwayPath(start, color);
+      const points = generateCleanPath(start);
 
-      // Create SVG path
       const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
 
-      // Build path string
       let d = `M ${points[0].x} ${points[0].y}`;
       for (let i = 1; i < points.length; i++) {
         d += ` L ${points[i].x} ${points[i].y}`;
@@ -180,54 +208,145 @@
       path.setAttribute('d', d);
       path.setAttribute('stroke', color);
       path.setAttribute('stroke-width', '1.5');
-      path.setAttribute('stroke-dasharray', '6 4');
       path.setAttribute('fill', 'none');
       path.setAttribute('stroke-linecap', 'round');
-      path.style.opacity = '0.7';
+      path.setAttribute('stroke-linejoin', 'round');
+      path.style.opacity = '0.6';
 
-      // Animate the line drawing
+      // Animate drawing
       const length = path.getTotalLength();
       path.style.strokeDasharray = length;
       path.style.strokeDashoffset = length;
-      path.style.transition = 'none';
 
       canvas.appendChild(path);
 
-      // Animate drawing
+      // Quick draw animation
       requestAnimationFrame(() => {
-        path.style.transition = 'stroke-dashoffset 1.5s ease-out';
+        path.style.transition = 'stroke-dashoffset 0.4s ease-out';
         path.style.strokeDashoffset = '0';
       });
 
-      // After drawing, switch to dotted pattern
+      // Switch to dotted after draw completes
       setTimeout(() => {
-        path.style.transition = 'none';
-        path.setAttribute('stroke-dasharray', '6 4');
-      }, 1600);
+        path.style.strokeDasharray = '4 6';
+      }, 450);
 
-      // Fade out and remove
+      // Fade out
       setTimeout(() => {
-        path.style.transition = 'opacity 2s ease-out';
+        path.style.transition = 'opacity 1s ease-out';
         path.style.opacity = '0';
-      }, 3000);
+      }, 1500);
 
+      // Remove
       setTimeout(() => {
         path.remove();
-      }, 5000);
+      }, 2600);
     }
 
-    function spawnLine() {
-      const btn = buttons[Math.floor(Math.random() * buttons.length)];
-      createLine(btn);
+    // Varying frequency - spawn at random intervals
+    function scheduleNextLine() {
+      const delay = 200 + Math.random() * 800;
+      setTimeout(() => {
+        const btn = buttons[Math.floor(Math.random() * buttons.length)];
+        createLine(btn);
+        scheduleNextLine();
+      }, delay);
     }
 
-    // Spawn lines periodically
-    setInterval(spawnLine, 400);
+    // Start line spawning
+    scheduleNextLine();
+    // Spawn a few more with offset timing for variety
+    setTimeout(scheduleNextLine, 300);
+    setTimeout(scheduleNextLine, 700);
 
-    // Initial burst
-    for (let i = 0; i < 5; i++) {
-      setTimeout(spawnLine, i * 200);
+    // ============ CURSORS ============
+    const cursorSVG = `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M5.5 3.21V20.8c0 .45.54.67.85.35l4.86-4.86a.5.5 0 0 1 .35-.15h6.87c.48 0 .72-.58.38-.92L5.85 2.85a.5.5 0 0 0-.35.36z" fill="currentColor"/>
+      <path d="M5.5 3.21V20.8c0 .45.54.67.85.35l4.86-4.86a.5.5 0 0 1 .35-.15h6.87c.48 0 .72-.58.38-.92L5.85 2.85a.5.5 0 0 0-.35.36z" stroke="white" stroke-width="1.5"/>
+    </svg>`;
+
+    const users = [
+      { name: 'Sarah', color: '#3b82f6' },
+      { name: 'Mike', color: '#22c55e' },
+      { name: 'Emma', color: '#a855f7' },
+      { name: 'Alex', color: '#ec4899' },
+      { name: 'Jordan', color: '#f97316' },
+      { name: 'Taylor', color: '#06b6d4' },
+    ];
+
+    const cursors = [];
+
+    users.forEach((user) => {
+      const cursor = document.createElement('div');
+      cursor.className = 'cursor';
+      cursor.innerHTML = `
+        ${cursorSVG}
+        <div class="cursor-label">${user.name}</div>
+      `;
+      cursor.querySelector('svg').style.color = user.color;
+      document.body.appendChild(cursor);
+
+      const startX = Math.random() * window.innerWidth * 0.8 + window.innerWidth * 0.1;
+      const startY = Math.random() * window.innerHeight * 0.8 + window.innerHeight * 0.1;
+
+      cursors.push({
+        el: cursor,
+        x: startX,
+        y: startY,
+        targetX: startX,
+        targetY: startY,
+        speed: 0.5 + Math.random() * 1.5,
+        pauseTime: 0,
+        nextMoveTime: Math.random() * 2000,
+      });
+    });
+
+    function animateCursors(time) {
+      cursors.forEach((cursor) => {
+        if (time > cursor.nextMoveTime) {
+          if (Math.random() < 0.3) {
+            cursor.pauseTime = time + 500 + Math.random() * 2000;
+          }
+          cursor.targetX = Math.random() * window.innerWidth * 0.85 + window.innerWidth * 0.075;
+          cursor.targetY = Math.random() * window.innerHeight * 0.85 + window.innerHeight * 0.075;
+          cursor.nextMoveTime = time + 1000 + Math.random() * 3000;
+        }
+
+        if (time > cursor.pauseTime) {
+          const dx = cursor.targetX - cursor.x;
+          const dy = cursor.targetY - cursor.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+
+          if (dist > 1) {
+            const ease = 0.02 + cursor.speed * 0.02;
+            cursor.x += dx * ease;
+            cursor.y += dy * ease;
+          }
+        }
+
+        cursor.el.style.transform = `translate(${cursor.x}px, ${cursor.y}px)`;
+      });
+
+      requestAnimationFrame(animateCursors);
     }
+
+    requestAnimationFrame(animateCursors);
+
+    // User's cursor
+    let userCursor = null;
+    document.addEventListener('mousemove', (e) => {
+      if (!userCursor) {
+        userCursor = document.createElement('div');
+        userCursor.className = 'cursor cursor-you';
+        userCursor.innerHTML = `
+          ${cursorSVG}
+          <div class="cursor-label">You</div>
+        `;
+        userCursor.querySelector('svg').style.color = '#fff';
+        document.body.appendChild(userCursor);
+      }
+      userCursor.style.transform = `translate(${e.clientX}px, ${e.clientY}px)`;
+    });
   </script>
 </body>
 </html>
