@@ -16,12 +16,10 @@
     body {
       background: #000;
       min-height: 100vh;
-      overflow: hidden;
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
       display: flex;
       justify-content: center;
       align-items: center;
-      cursor: none;
     }
 
     .lines-canvas {
@@ -48,7 +46,7 @@
       padding: 12px 16px;
       font-size: 16px;
       font-weight: 500;
-      cursor: none;
+      cursor: pointer;
       background: transparent;
       transition: background 0.2s;
       text-align: left;
@@ -93,7 +91,6 @@
     .cursor svg {
       width: 20px;
       height: 20px;
-      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
     }
 
     .cursor-label {
@@ -168,13 +165,10 @@
         const isHorizontal = start.dir === 'up' || start.dir === 'down' ? (i % 2 === 0) : (i % 2 === 1);
 
         if (isHorizontal) {
-          // Go horizontal toward nearest edge
           const goRight = current.x < w / 2 ? (Math.random() > 0.3 ? false : true) : (Math.random() > 0.3 ? true : false);
-          const targetX = goRight ? w + 100 : -100;
           const segLen = 100 + Math.random() * 200;
           current.x = goRight ? current.x + segLen : current.x - segLen;
         } else {
-          // Go vertical toward nearest edge
           const goDown = current.y < h / 2 ? (Math.random() > 0.3 ? false : true) : (Math.random() > 0.3 ? true : false);
           const segLen = 100 + Math.random() * 200;
           current.y = goDown ? current.y + segLen : current.y - segLen;
@@ -213,37 +207,31 @@
       path.setAttribute('stroke-linejoin', 'round');
       path.style.opacity = '0.6';
 
-      // Animate drawing
       const length = path.getTotalLength();
       path.style.strokeDasharray = length;
       path.style.strokeDashoffset = length;
 
       canvas.appendChild(path);
 
-      // Quick draw animation
       requestAnimationFrame(() => {
         path.style.transition = 'stroke-dashoffset 0.4s ease-out';
         path.style.strokeDashoffset = '0';
       });
 
-      // Switch to dotted after draw completes
       setTimeout(() => {
         path.style.strokeDasharray = '4 6';
       }, 450);
 
-      // Fade out
       setTimeout(() => {
         path.style.transition = 'opacity 1s ease-out';
         path.style.opacity = '0';
       }, 1500);
 
-      // Remove
       setTimeout(() => {
         path.remove();
       }, 2600);
     }
 
-    // Varying frequency - spawn at random intervals
     function scheduleNextLine() {
       const delay = 200 + Math.random() * 800;
       setTimeout(() => {
@@ -253,25 +241,28 @@
       }, delay);
     }
 
-    // Start line spawning
     scheduleNextLine();
-    // Spawn a few more with offset timing for variety
     setTimeout(scheduleNextLine, 300);
     setTimeout(scheduleNextLine, 700);
 
     // ============ CURSORS ============
     const cursorSVG = `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M5.5 3.21V20.8c0 .45.54.67.85.35l4.86-4.86a.5.5 0 0 1 .35-.15h6.87c.48 0 .72-.58.38-.92L5.85 2.85a.5.5 0 0 0-.35.36z" fill="currentColor"/>
-      <path d="M5.5 3.21V20.8c0 .45.54.67.85.35l4.86-4.86a.5.5 0 0 1 .35-.15h6.87c.48 0 .72-.58.38-.92L5.85 2.85a.5.5 0 0 0-.35.36z" stroke="white" stroke-width="1.5"/>
+      <path d="M5.5 3.21V20.8c0 .45.54.67.85.35l4.86-4.86a.5.5 0 0 1 .35-.15h6.87c.48 0 .72-.58.38-.92L5.85 2.85a.5.5 0 0 0-.35.36z" fill="#000"/>
+      <path d="M5.5 3.21V20.8c0 .45.54.67.85.35l4.86-4.86a.5.5 0 0 1 .35-.15h6.87c.48 0 .72-.58.38-.92L5.85 2.85a.5.5 0 0 0-.35.36z" stroke="#fff" stroke-width="1.5"/>
+    </svg>`;
+
+    const whiteCursorSVG = `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M5.5 3.21V20.8c0 .45.54.67.85.35l4.86-4.86a.5.5 0 0 1 .35-.15h6.87c.48 0 .72-.58.38-.92L5.85 2.85a.5.5 0 0 0-.35.36z" fill="#fff"/>
+      <path d="M5.5 3.21V20.8c0 .45.54.67.85.35l4.86-4.86a.5.5 0 0 1 .35-.15h6.87c.48 0 .72-.58.38-.92L5.85 2.85a.5.5 0 0 0-.35.36z" stroke="#000" stroke-width="1.5"/>
     </svg>`;
 
     const users = [
-      { name: 'Sarah', color: '#3b82f6' },
-      { name: 'Mike', color: '#22c55e' },
-      { name: 'Emma', color: '#a855f7' },
-      { name: 'Alex', color: '#ec4899' },
-      { name: 'Jordan', color: '#f97316' },
-      { name: 'Taylor', color: '#06b6d4' },
+      { name: 'Sarah' },
+      { name: 'Mike' },
+      { name: 'Emma' },
+      { name: 'Alex' },
+      { name: 'Jordan' },
+      { name: 'Taylor' },
     ];
 
     const cursors = [];
@@ -283,7 +274,6 @@
         ${cursorSVG}
         <div class="cursor-label">${user.name}</div>
       `;
-      cursor.querySelector('svg').style.color = user.color;
       document.body.appendChild(cursor);
 
       const startX = Math.random() * window.innerWidth * 0.8 + window.innerWidth * 0.1;
@@ -333,19 +323,22 @@
     requestAnimationFrame(animateCursors);
 
     // User's cursor
-    let userCursor = null;
+    const userCursor = document.createElement('div');
+    userCursor.className = 'cursor cursor-you';
+    userCursor.innerHTML = `
+      ${whiteCursorSVG}
+      <div class="cursor-label">You</div>
+    `;
+    userCursor.style.display = 'none';
+    document.body.appendChild(userCursor);
+
     document.addEventListener('mousemove', (e) => {
-      if (!userCursor) {
-        userCursor = document.createElement('div');
-        userCursor.className = 'cursor cursor-you';
-        userCursor.innerHTML = `
-          ${cursorSVG}
-          <div class="cursor-label">You</div>
-        `;
-        userCursor.querySelector('svg').style.color = '#fff';
-        document.body.appendChild(userCursor);
-      }
+      userCursor.style.display = 'block';
       userCursor.style.transform = `translate(${e.clientX}px, ${e.clientY}px)`;
+    });
+
+    document.addEventListener('mouseleave', () => {
+      userCursor.style.display = 'none';
     });
   </script>
 </body>
