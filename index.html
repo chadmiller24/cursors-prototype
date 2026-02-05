@@ -3,8 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Collaborative Cursors</title>
+  <title>Everywhere Edition</title>
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+
     * {
       margin: 0;
       padding: 0;
@@ -15,186 +17,217 @@
       background: #000;
       min-height: 100vh;
       overflow: hidden;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
     }
 
-    .cursor {
-      position: absolute;
-      pointer-events: none;
-      z-index: 1000;
-      transition: transform 0.1s ease-out;
-    }
-
-    .cursor svg {
-      width: 20px;
-      height: 20px;
-      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
-    }
-
-    .cursor-label {
-      position: absolute;
-      left: 16px;
-      top: 16px;
-      padding: 4px 8px;
-      border-radius: 4px;
-      font-size: 12px;
-      font-weight: 500;
-      white-space: nowrap;
-      color: #fff;
-    }
-
-    /* Different cursor colors */
-    .cursor-blue svg path { fill: #3b82f6; }
-    .cursor-blue .cursor-label { background: #3b82f6; }
-
-    .cursor-green svg path { fill: #22c55e; }
-    .cursor-green .cursor-label { background: #22c55e; }
-
-    .cursor-purple svg path { fill: #a855f7; }
-    .cursor-purple .cursor-label { background: #a855f7; }
-
-    .cursor-pink svg path { fill: #ec4899; }
-    .cursor-pink .cursor-label { background: #ec4899; }
-
-    .cursor-orange svg path { fill: #f97316; }
-    .cursor-orange .cursor-label { background: #f97316; }
-
-    .cursor-cyan svg path { fill: #06b6d4; }
-    .cursor-cyan .cursor-label { background: #06b6d4; }
-
-    .cursor-yellow svg path { fill: #eab308; }
-    .cursor-yellow .cursor-label { background: #eab308; color: #000; }
-
-    .cursor-red svg path { fill: #ef4444; }
-    .cursor-red .cursor-label { background: #ef4444; }
-
-    /* Canvas content */
-    .canvas {
-      position: relative;
-      width: 100vw;
-      height: 100vh;
-    }
-
-    .hint {
+    .lines-canvas {
       position: fixed;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      color: rgba(255,255,255,0.4);
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, 140px);
+      grid-template-rows: repeat(3, 70px);
+      gap: 12px;
+      position: relative;
+      z-index: 10;
+    }
+
+    .btn {
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+      background: transparent;
+      transition: background 0.2s;
+      text-align: left;
+      display: flex;
+      align-items: flex-start;
+    }
+
+    .btn:hover {
+      background: rgba(255,255,255,0.05);
+    }
+
+    /* Button colors */
+    .btn-agentic { border: 1.5px solid #5B8DEF; color: #5B8DEF; }
+    .btn-online { border: 1.5px solid #4ADE80; color: #4ADE80; }
+    .btn-checkout { border: 1.5px solid #BEF264; color: #BEF264; }
+    .btn-retail { border: 1.5px solid #FACC15; color: #FACC15; }
+    .btn-marketing { border: 1.5px solid #EC4899; color: #EC4899; }
+    .btn-edition { border: 1.5px solid #fff; color: #fff; grid-column: span 2; }
+    .btn-shopapp { border: 1.5px solid #fff; color: #fff; }
+    .btn-shipping { border: 1.5px solid #5B8DEF; color: #5B8DEF; }
+    .btn-developer { border: 1.5px solid #FB923C; color: #FB923C; }
+    .btn-finance { border: 1.5px solid #22D3EE; color: #22D3EE; }
+    .btn-b2b { border: 1.5px solid #F87171; color: #F87171; }
+
+    .btn-edition {
+      flex-direction: column;
+      line-height: 1.2;
+    }
+
+    .btn-edition span {
       font-size: 14px;
+      opacity: 0.7;
     }
   </style>
 </head>
 <body>
-  <div class="canvas" id="canvas"></div>
-  <div class="hint">Move your mouse to join</div>
+  <svg class="lines-canvas" id="linesCanvas"></svg>
+
+  <div class="grid" id="grid">
+    <button class="btn btn-agentic" data-color="#5B8DEF">Agentic</button>
+    <button class="btn btn-online" data-color="#4ADE80">Online</button>
+    <button class="btn btn-checkout" data-color="#BEF264">Checkout</button>
+    <button class="btn btn-retail" data-color="#FACC15">Retail</button>
+    <button class="btn btn-marketing" data-color="#EC4899">Marketing</button>
+    <button class="btn btn-edition" data-color="#ffffff"><span>The</span>Everywhere<br>Edition</button>
+    <button class="btn btn-shopapp" data-color="#ffffff">Shop App</button>
+    <button class="btn btn-shipping" data-color="#5B8DEF">Shipping</button>
+    <button class="btn btn-developer" data-color="#FB923C">Developer</button>
+    <button class="btn btn-finance" data-color="#22D3EE">Finance</button>
+    <button class="btn btn-b2b" data-color="#F87171">B2B</button>
+  </div>
 
   <script>
-    const cursorSVG = `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M5.5 3.21V20.8c0 .45.54.67.85.35l4.86-4.86a.5.5 0 0 1 .35-.15h6.87c.48 0 .72-.58.38-.92L5.85 2.85a.5.5 0 0 0-.35.36z" fill="currentColor"/>
-      <path d="M5.5 3.21V20.8c0 .45.54.67.85.35l4.86-4.86a.5.5 0 0 1 .35-.15h6.87c.48 0 .72-.58.38-.92L5.85 2.85a.5.5 0 0 0-.35.36z" stroke="white" stroke-width="1.5"/>
-    </svg>`;
+    const canvas = document.getElementById('linesCanvas');
+    const buttons = document.querySelectorAll('.btn');
+    const lines = [];
 
-    const users = [
-      { name: 'Sarah', color: 'blue' },
-      { name: 'Mike', color: 'green' },
-      { name: 'Emma', color: 'purple' },
-      { name: 'Alex', color: 'pink' },
-      { name: 'Jordan', color: 'orange' },
-      { name: 'Taylor', color: 'cyan' },
-      { name: 'Chris', color: 'yellow' },
-      { name: 'Sam', color: 'red' },
-    ];
-
-    const canvas = document.getElementById('canvas');
-    const cursors = [];
-
-    // Create cursors
-    users.forEach((user, i) => {
-      const cursor = document.createElement('div');
-      cursor.className = `cursor cursor-${user.color}`;
-      cursor.innerHTML = `
-        ${cursorSVG}
-        <div class="cursor-label">${user.name}</div>
-      `;
-      canvas.appendChild(cursor);
-
-      // Random starting position
-      const startX = Math.random() * window.innerWidth * 0.8 + window.innerWidth * 0.1;
-      const startY = Math.random() * window.innerHeight * 0.8 + window.innerHeight * 0.1;
-
-      cursors.push({
-        el: cursor,
-        x: startX,
-        y: startY,
-        targetX: startX,
-        targetY: startY,
-        vx: 0,
-        vy: 0,
-        speed: 0.5 + Math.random() * 1.5,
-        pauseTime: 0,
-        nextMoveTime: Math.random() * 2000,
-      });
-    });
-
-    // Animation loop
-    function animate(time) {
-      cursors.forEach((cursor, i) => {
-        // Check if it's time to pick a new target
-        if (time > cursor.nextMoveTime) {
-          // Occasionally pause
-          if (Math.random() < 0.3) {
-            cursor.pauseTime = time + 500 + Math.random() * 2000;
-          }
-
-          // Pick new random target
-          cursor.targetX = Math.random() * window.innerWidth * 0.85 + window.innerWidth * 0.075;
-          cursor.targetY = Math.random() * window.innerHeight * 0.85 + window.innerHeight * 0.075;
-
-          cursor.nextMoveTime = time + 1000 + Math.random() * 3000;
-        }
-
-        // Move toward target (if not paused)
-        if (time > cursor.pauseTime) {
-          const dx = cursor.targetX - cursor.x;
-          const dy = cursor.targetY - cursor.y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-
-          if (dist > 1) {
-            const ease = 0.02 + cursor.speed * 0.02;
-            cursor.x += dx * ease;
-            cursor.y += dy * ease;
-          }
-        }
-
-        // Update position
-        cursor.el.style.transform = `translate(${cursor.x}px, ${cursor.y}px)`;
-      });
-
-      requestAnimationFrame(animate);
+    function getButtonCenter(btn) {
+      const rect = btn.getBoundingClientRect();
+      return {
+        x: rect.left + rect.width / 2,
+        y: rect.top + rect.height / 2
+      };
     }
 
-    // Add user's real cursor
-    let userCursor = null;
-    document.addEventListener('mousemove', (e) => {
-      if (!userCursor) {
-        userCursor = document.createElement('div');
-        userCursor.className = 'cursor';
-        userCursor.innerHTML = `
-          ${cursorSVG}
-          <div class="cursor-label" style="background:#fff;color:#000;">You</div>
-        `;
-        userCursor.querySelector('svg path').style.fill = '#fff';
-        canvas.appendChild(userCursor);
-        document.querySelector('.hint').style.opacity = '0';
+    function getRandomEdgePoint(btn) {
+      const rect = btn.getBoundingClientRect();
+      const side = Math.floor(Math.random() * 4);
+      switch(side) {
+        case 0: // top
+          return { x: rect.left + Math.random() * rect.width, y: rect.top };
+        case 1: // right
+          return { x: rect.right, y: rect.top + Math.random() * rect.height };
+        case 2: // bottom
+          return { x: rect.left + Math.random() * rect.width, y: rect.bottom };
+        case 3: // left
+          return { x: rect.left, y: rect.top + Math.random() * rect.height };
       }
-      userCursor.style.transform = `translate(${e.clientX}px, ${e.clientY}px)`;
-    });
+    }
 
-    // Hide default cursor
-    document.body.style.cursor = 'none';
+    function generateSubwayPath(start, color) {
+      const points = [start];
+      let current = { ...start };
+      const numSegments = 3 + Math.floor(Math.random() * 4);
 
-    requestAnimationFrame(animate);
+      // Determine general direction (toward edge of screen)
+      const screenCenterX = window.innerWidth / 2;
+      const screenCenterY = window.innerHeight / 2;
+      const dirX = start.x < screenCenterX ? -1 : 1;
+      const dirY = start.y < screenCenterY ? -1 : 1;
+
+      for (let i = 0; i < numSegments; i++) {
+        const segmentLength = 80 + Math.random() * 200;
+        const moveType = Math.random();
+
+        if (moveType < 0.4) {
+          // Horizontal
+          current = { x: current.x + segmentLength * dirX * (Math.random() > 0.3 ? 1 : -0.5), y: current.y };
+        } else if (moveType < 0.8) {
+          // Vertical
+          current = { x: current.x, y: current.y + segmentLength * dirY * (Math.random() > 0.3 ? 1 : -0.5) };
+        } else {
+          // 45-degree diagonal
+          const diag = segmentLength * 0.707;
+          current = {
+            x: current.x + diag * dirX * (Math.random() > 0.3 ? 1 : -0.5),
+            y: current.y + diag * dirY * (Math.random() > 0.3 ? 1 : -0.5)
+          };
+        }
+        points.push({ ...current });
+      }
+
+      return points;
+    }
+
+    function createLine(btn) {
+      const color = btn.dataset.color;
+      const start = getRandomEdgePoint(btn);
+      const points = generateSubwayPath(start, color);
+
+      // Create SVG path
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+
+      // Build path string
+      let d = `M ${points[0].x} ${points[0].y}`;
+      for (let i = 1; i < points.length; i++) {
+        d += ` L ${points[i].x} ${points[i].y}`;
+      }
+
+      path.setAttribute('d', d);
+      path.setAttribute('stroke', color);
+      path.setAttribute('stroke-width', '1.5');
+      path.setAttribute('stroke-dasharray', '6 4');
+      path.setAttribute('fill', 'none');
+      path.setAttribute('stroke-linecap', 'round');
+      path.style.opacity = '0.7';
+
+      // Animate the line drawing
+      const length = path.getTotalLength();
+      path.style.strokeDasharray = length;
+      path.style.strokeDashoffset = length;
+      path.style.transition = 'none';
+
+      canvas.appendChild(path);
+
+      // Animate drawing
+      requestAnimationFrame(() => {
+        path.style.transition = 'stroke-dashoffset 1.5s ease-out';
+        path.style.strokeDashoffset = '0';
+      });
+
+      // After drawing, switch to dotted pattern
+      setTimeout(() => {
+        path.style.transition = 'none';
+        path.setAttribute('stroke-dasharray', '6 4');
+      }, 1600);
+
+      // Fade out and remove
+      setTimeout(() => {
+        path.style.transition = 'opacity 2s ease-out';
+        path.style.opacity = '0';
+      }, 3000);
+
+      setTimeout(() => {
+        path.remove();
+      }, 5000);
+    }
+
+    function spawnLine() {
+      const btn = buttons[Math.floor(Math.random() * buttons.length)];
+      createLine(btn);
+    }
+
+    // Spawn lines periodically
+    setInterval(spawnLine, 400);
+
+    // Initial burst
+    for (let i = 0; i < 5; i++) {
+      setTimeout(spawnLine, i * 200);
+    }
   </script>
 </body>
 </html>
